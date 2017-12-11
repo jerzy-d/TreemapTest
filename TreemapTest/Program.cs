@@ -10,8 +10,8 @@ namespace TreemapTest
     {
         static void Main(string[] args)
         {
-            double[] sizes = new double[] { 60, 60, 40, 30, 20, 20, 10 };
-            var tm = new Treemap(sizes, 0, 0, 60, 40);
+            double[] sizes = new double[] { 6, 6, 4, 3, 2, 2, 1 };
+            var tm = new Treemap(sizes, 0, 0, 6, 4);
             tm.Squarify();
         }
     }

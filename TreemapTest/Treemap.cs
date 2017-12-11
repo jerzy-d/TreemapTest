@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Diagnostics;
 
 namespace TreemapTest
 {
@@ -26,7 +27,7 @@ namespace TreemapTest
     public class Treemap
     {
         enum Orientation { Horizontal, Vertical }
-        const int margin = 1;
+//        const int margin = 1;
         double[] _sizes;
         Rect[] _rects;
         Rect _mainRect;
@@ -35,14 +36,18 @@ namespace TreemapTest
         Rect _curRect;
         double _curAreaSum, _curMin, _curMax, _shortSide, _shortSideSq;
         Orientation _curOrientation;
+        int _layoutCount; // testing
+        List<Rect> _usedRect; // testing
 
         public Treemap(double[] sizes, double x, double y, double width, double height)
         {
-            width -= margin * 2;
-            height -= margin * 2;
+            //width -= margin * 2;
+            //height -= margin * 2;
             _sizes = Normalize(sizes, width * height);
             _mainRect = new Rect(x, y, width, height);
-            _curRect = new Rect(x+margin, y+margin, width, height);
+            _curRect = new Rect(x, y, width, height);
+            _usedRect = new List<Rect>(); //testing
+            _usedRect.Add(_curRect);
             if (width >= height)
             {
                 _curOrientation = Orientation.Vertical;
@@ -68,6 +73,7 @@ namespace TreemapTest
             {
                 double size = _sizes[i];
                 if (ImprovesRatio(_curAreaSum, _curMin, _curMax, _shortSideSq, size))
+                //if (Worst(_curAreaSum, _shortSideSq, _curRow.Begin, _curRow.End) >= Worst(_curAreaSum + size, _shortSideSq, _curRow.Begin, _curRow.End+1))
                 {
                     AddToCurrentRow(size);
                 }
@@ -104,6 +110,20 @@ namespace TreemapTest
             return r1 >= r2;
         }
 
+
+        double Worst(double sum, double sideLenSq, int begin, int end)
+        {
+            double max = double.MinValue;
+            double sumsq = sum * sum;
+            for (int i = begin; i < end; ++i)
+            {
+                double sz = _sizes[i];
+                var m = Math.Max((sideLenSq * sz) / sumsq, sumsq / (sideLenSq * sz));
+                if (max < m) max = m;
+            }
+            return max;
+        }
+
         double Ratio(double sum, double min, double max, double sideLenSq)
         {
             double sumSq = sum * sum;
@@ -138,12 +158,14 @@ namespace TreemapTest
                     x += width;
                 }
             }
+            ++_layoutCount;
         }
 
         void LayoutRow()
         {
             double x = _curRect.X;
             double y = _curRect.Y;
+
             if (_curOrientation == Orientation.Vertical)
             {
                 double width = _curAreaSum / _curRect.Height;
@@ -154,7 +176,7 @@ namespace TreemapTest
                     _rects[i] = new Rect(x, y, width, height);
                     y += height;
                 }
-                _curRect = new Rect(x + width, y, _curRect.Width - width, _curRect.Height);
+                _curRect = new Rect(x + width, _curRect.Y, _curRect.Width - width, _curRect.Height);
             }
             else
             {
@@ -166,7 +188,7 @@ namespace TreemapTest
                     _rects[i] = new Rect(x, y, width, height);
                     x += width;
                 }
-                _curRect = new Rect(x, y+height, _curRect.Width, _curRect.Height-height);
+                _curRect = new Rect(_curRect.X, y+height, _curRect.Width, _curRect.Height-height);
             }
             _curAreaSum = 0;
             _curMax = double.MinValue;
@@ -182,6 +204,8 @@ namespace TreemapTest
                 _curOrientation = Orientation.Horizontal;
                 _shortSideSq = _curRect.Width * _curRect.Width;
             }
+            ++_layoutCount;
+            _usedRect.Add(_curRect);
         }
     }
 }
